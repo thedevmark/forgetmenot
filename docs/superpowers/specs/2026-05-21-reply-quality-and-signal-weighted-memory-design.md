@@ -42,6 +42,17 @@ A second transcript surfaced a different and arguably worse failure class — th
 
 **Critical guardrail (C1 ↔ B1):** "yes-and" applies to *playful* premises only. The bot must **never** accept a fiction that rewrites factual or moderation reality ("you already timed me out", "you promised to ban surf"). Collaborative-fiction handling and action-truthfulness are the same boundary seen from two sides.
 
+### Third transcript: confabulation + misattribution
+
+A third transcript exposed the most trust-damaging failure yet — the bot inventing facts and prior interactions:
+
+| # | Finding | Mechanism | Severity |
+|---|---|---|---|
+| D1 | **Confabulation.** "That's why I corrected you. MW2, not Warzone." / "The stream is MW2, not Warzone. You don't own Warzone." — no such prior exchange happened; the bot fabricated a past interaction and a false claim about the viewer, then doubled down across two replies. | Persona ("you remember everything") + HARD RULE #6 ("be specific, use LORE/CHAT/NOTES") with nothing real to ground on → the bot invents specifics instead of staying vague. Content-side twin of B1. | **Critical** |
+| D2 | **Wrong-target attribution.** "@nightmareul most people don't. why would they?" answers thedeutschmark's "cause it's fun," but is tagged at nightmareul. | The engine trusts a leading `@tag` the LLM writes (`alreadyTagged` → sent as-is, `engine.ts:228-231`). When the LLM tags the wrong speaker from the multi-author `CHAT` block, nothing corrects it. **Correction:** an earlier dismissal of this as "async ordering" was wrong — two instances now. Needs a confirming look at live logs, but the prompt/prefix mechanism is the likely cause. | High |
+
+**The truthfulness throughline (D1 ↔ B1):** the bot must never assert something that didn't happen — an action (B1), a fact, or a past interaction (D1). Same discipline, three surfaces. Where it lacks grounding it must stay vague or ask, never fabricate.
+
 ### The eval harness already exists
 
 `engine/src/eval/` scores reply/action/policy/retrieval correctness on the **real production code path** (`runner.ts` calls the actual `assemblePrompt`/`buildReplyContext`). It does **not** yet score length-fit, action-truthfulness, or room-awareness. So Phase 0 is an *extension*, not new infrastructure, and this transcript becomes a fixture.
@@ -57,6 +68,8 @@ TurboQuant's transferable lesson (allocate representation to where the variance/
 
 These are **two siblings under one philosophy, shipped as separate small changes.** Explicitly **no** shared "budget allocator" abstraction — that would be speculative over-engineering. The eval harness (Phase 0) is the shared measurement spine that keeps every later change honest.
 
+A second cross-cutting principle runs through the reply-quality work: **the bot never asserts what didn't happen** — an action (B1), a fact, or a past interaction (D1). Truthfulness is enforced on the *deterministic* side (executed-action logs, seeded facts/notes) and locked by eval — never left to prompt obedience alone, which the failure data shows is routinely ignored under load.
+
 ## Goals
 
 1. The bot never claims a moderation action it did not actually execute.
@@ -64,8 +77,9 @@ These are **two siblings under one philosophy, shipped as separate small changes
 3. The bot can pick up genuinely relevant room context without hijacking the `@`-thread.
 4. Answerable factual/temporal questions ("first stream") are served from real data — never by guessing.
 5. The bot plays along with playful premises and tracks a bit developing across several messages — while never letting fiction rewrite factual or moderation reality.
-6. Memory hygiene catches semantic duplicates; retention/decay favors high-signal notes.
-7. Every change above is locked behind an eval dimension so it can't silently regress.
+6. The bot never fabricates facts or prior interactions; with no grounding it stays vague or asks, and it addresses the viewer who actually spoke.
+7. Memory hygiene catches semantic duplicates; retention/decay favors high-signal notes.
+8. Every change above is locked behind an eval dimension so it can't silently regress.
 
 ## Non-goals
 
@@ -88,6 +102,8 @@ Phases are sequenced by leverage + dependency. Phase 0 → 1 is the first implem
   - **room-awareness** — when relevant room context exists, did the reply acknowledge it (without hijacking the thread)?
   - **conversational coherence / bit-tracking** — across a multi-message fixture, does the bot maintain the running game and react to the arc (C2/C3) rather than handle each line atomically?
   - **playful-premise handling** — does the bot "yes-and" a playful fiction (C1) while still refusing premises that rewrite factual/moderation reality (the C1↔B1 guardrail)?
+  - **groundedness / no-confabulation** — does the reply assert only specifics present in CHAT/LORE/NOTES (D1)? A claim of a fact or prior interaction with no grounding in the seeded context is a fail.
+  - **correct addressee** — when the message is a direct mention, does the reply address the actual speaker rather than a third party from the CHAT block (D2)?
 - **Verification:** harness runs on the new fixtures and reports all existing + new dimensions; current code scores *badly* on the new ones (establishing the regression baseline).
 
 ### Phase 1 — Truthful actions (critical, B1)
@@ -113,7 +129,8 @@ This is the largest behavioral phase. It rebalances the over-tight anti-derail c
 - **React, don't interrogate.** When the move is a punchline/reaction ("LMAOOOO", "it was a clutch"), the bot should riff or react, not loop info-seeking questions. Pairs with Phase 2 length tiers. (C3)
 - **"Yes-and" playful premises** (C1): when chat directs a clearly playful fiction at the bot ("you now have 2 cats"), play along in-character. **Hard boundary:** never yes-and a premise that asserts a factual or moderation outcome (Phase 1's truth boundary) — those still get an honest response, not improv.
 - Make `recentBotReplies` **per-target** so anti-repetition isn't diluted across viewers (B4).
-- **Verification:** room-awareness, conversational-coherence, and playful-premise dimensions improve on the `racsorf`-joke / colors / cats fixtures; the anti-derail regression fixture (emoji-only riffing, `engine.ts:271-279`) still passes; a "you already timed me out" fixture is **refused**, not yes-anded.
+- **Address the right speaker (D2).** On a direct mention, the reply must address the mentioner, not a third party from the `CHAT` block. Verify the mechanism against live logs first; the likely fix is deterministic — if the LLM's leading `@tag` names someone other than the current message author, rewrite it to the author (the engine already special-cases a leading `@`, `engine.ts:228-231`). Make speaker attribution in the prompt unambiguous (clearly delimit "the person you are replying to" from the `CHAT` transcript).
+- **Verification:** room-awareness, conversational-coherence, and playful-premise dimensions improve on the `racsorf`-joke / colors / cats fixtures; the correct-addressee dimension passes on a fixture where the mentioner differs from other recent chatters; the anti-derail regression fixture (emoji-only riffing, `engine.ts:271-279`) still passes; a "you already timed me out" fixture is **refused**, not yes-anded.
 
 ### Phase 4 — Factual/temporal retrieval (B5)
 
@@ -127,6 +144,15 @@ This is the largest behavioral phase. It rebalances the over-tight anti-derail c
 - **Signal-weighted retention/decay** (input-side sibling of Phase 2): confidence + reconfirmation count + distinctiveness drive what survives the token-budget drop ladder and what resists stale-decay — not recency rank alone.
 - **Verification:** dedup fixture merges known semantic dupes without merging genuinely distinct facts; **survival-weighted retrieval quality** metric (now computable via Phase 0) improves on a fixture where a high-signal note was previously trimmed in favor of a recent-but-noisy one.
 
+### Phase 6 — Groundedness: no confabulation (D1)
+
+The content-side twin of Phase 1. The bot must not invent facts or prior interactions ("I corrected you about MW2", "you don't own Warzone") when it has nothing real to draw on.
+
+- **Reduce the pressure to fabricate.** HARD RULE #6 currently pushes "be specific, use LORE/CHAT/NOTES." Reframe: be specific *when you have something real*; with no grounding, stay brief/vague or ask — never invent a specific or a shared history. Reconcile with the persona's "you remember everything" line, which actively encourages confident fabrication (remembering ≠ inventing).
+- **Feed it real facts** so it doesn't need to invent — this is why Phase 4 (factual/temporal retrieval) and the persona reframing belong to the same theme. The current stream's category/title is already in context (`STREAM:` line); make clear the bot may state *that* but not extrapolate beyond it (the MW2/Warzone confabulation likely started from the real category and span­ned into invention).
+- **Lock it with eval, not prompt faith.** The groundedness dimension (Phase 0) is the regression gate. This is the **first dimension that needs an LLM-judge** — scoring "did the reply assert a specific not present in the seeded context?" is not deterministic. Introduce a minimal judge pass here (one cheap LLM call per scored message, criterion = "list any concrete claim in the reply not supported by the provided context"), gated behind a fixture flag so deterministic fixtures stay judge-free.
+- **Verification:** groundedness dimension on a fixture where the bot has **no** relevant notes about a topic the viewer raises → the reply asserts no specifics or prior interactions; a fixture **with** a seeded fact → the bot may use that fact. The "you don't own Warzone" / "I corrected you" class of reply scores as a fail pre-fix.
+
 ## Risks / open questions
 
 - **Heuristic length mis-tiering.** Mitigated by Phase 0 measurement; classifier pre-pass is the documented upgrade path if needed.
@@ -134,7 +160,9 @@ This is the largest behavioral phase. It rebalances the over-tight anti-derail c
 - **QJL sketch quality at short fact lengths.** Facts are short strings, not 1536-dim embeddings; the sketch is over a token/char-feature vector, so distortion behaves differently than in the paper. Validate empirically on the dedup fixture before trusting it over lexical Jaccard; keep Jaccard as a floor.
 - **Persona coupling.** Phase 2's identity-probe routing must read the live persona/`creatorRelationship` setting, not assume a preset.
 - **Fuzzy yes-and boundary (C1↔B1).** Distinguishing "playful fiction" ("you have 2 cats") from a "factual/moderation claim" ("you timed me out") is judgment the LLM makes, and it will sometimes misjudge. Mitigation: the boundary is anchored on the *deterministic* side — moderation/factual truth comes from executed-action logs and real data (Phases 1/4), so even if the bot improvs wrongly in prose, it cannot be tricked into *acting* on or *confirming* a false moderation/factual state. Improv lives only in tone, never in the action/fact layer.
+- **Confabulation is hard to fully prevent (D1).** Groundedness can't be enforced deterministically the way actions can — the bot generates prose. Mitigation is layered: reduce the pressure to fabricate (rule/persona reframing), feed real facts (Phase 4), and gate regressions with an LLM-judge groundedness score (Phase 6). Residual risk: the judge itself is imperfect and adds cost — keep it behind a fixture flag and only on groundedness-scored fixtures.
+- **D2 attribution needs log confirmation.** The prompt/prefix mechanism is the likely cause but unproven; Phase 3 starts by confirming against live logs before applying the deterministic `@`-rewrite, to avoid "fixing" a non-bug or clobbering legitimate third-party address.
 
 ## Out of this plan's first increment
 
-Phases 0–1 ship first. 2–5 are sequenced follow-ups in the same plan, each gated on its eval dimension.
+Phases 0–1 ship first. 2–6 are sequenced follow-ups, each gated on its eval dimension. Phase 6 (groundedness) and Phase 1 (truthful actions) are the two halves of the truthfulness throughline — Phase 1 first because it's deterministically enforceable and the most concrete trust violation; Phase 6 follows once the LLM-judge groundedness gate exists.
