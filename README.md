@@ -1,4 +1,4 @@
-<p align="center"><img src=".github/icon.png" alt="ForgetMeNot" width="120"></p>
+<p align="center"><img src=".github/logo.png" alt="ForgetMeNot" width="120"></p>
 
 <h1 align="center">ForgetMeNot</h1>
 
