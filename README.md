@@ -8,7 +8,7 @@
   <img src="https://img.shields.io/badge/TypeScript-Node.js-3178C6?logo=typescript&logoColor=white">
   <img src="https://img.shields.io/badge/SQLite-local%20memory-003B57?logo=sqlite&logoColor=white">
   <img src="https://img.shields.io/badge/LLM-Gemini%20%2F%20Qwen%20%2F%20Gemma-6a8fe6">
-  <img src="https://img.shields.io/badge/license-MIT-green">
+  <img src="https://img.shields.io/badge/license-AGPL--3.0-blue">
 </p>
 
 ---
@@ -79,18 +79,18 @@ Local-first: all chat memory lives in a SQLite file on the broadcaster's machine
 
 ## License
 
-[MIT](LICENSE)
+AGPL-3.0 — see [LICENSE](LICENSE). Releases up to v0.1.91 were published under MIT and stay MIT.
 
 ---
 
 ## deutschmark's other apps
 
 <table>
-<tr><td><img src=".github/apps/alert-alert.svg" width="34"></td><td><b><a href="https://github.com/thedeutschmark/alert-alert">Alert! Alert!</a></b><br>Stream-alert clips from any video source.</td></tr>
-<tr><td><img src=".github/apps/clipline.svg" width="34"></td><td><b><a href="https://github.com/thedeutschmark/clipline">Clipline</a></b><br>Livestream VODs → shortform clips with auto-captions.</td></tr>
-<tr><td><img src=".github/apps/toolset.svg" width="34"></td><td><b><a href="https://toolset.deutschmark.online">The Stream Toolset</a></b><br>OBS overlays + companion apps. One login, no subscriptions.</td></tr>
-<tr><td><img src=".github/apps/collab.svg" width="34"></td><td><b><a href="https://collab.deutschmark.online">Collab Planner</a></b><br>Finds collab windows from streamers' broadcast history.</td></tr>
-<tr><td><img src=".github/apps/pathos.svg" width="34"></td><td><b><a href="https://yourpathos.app">P.A.T.H.O.S.</a></b><br>AI career platform — resume tailoring + ATS scoring.</td></tr>
+<tr><td align="center" width="56"><img src=".github/apps/pathos.svg" width="44" alt=""></td><td><a href="https://yourpathos.app"><b>Pathos</b></a><br>Worker-side job search with source-linked roles, evidence-checked resumes, and application tracking.</td></tr>
+<tr><td align="center" width="56"><img src=".github/apps/markskill.svg" width="44" alt=""></td><td><a href="https://github.com/thedevmark/markskill"><b>Markskill</b></a><br>A product-engineering skill for AI agents: trace behavior to its owner, fix root causes, shape interfaces around real tasks, and verify claims with evidence.</td></tr>
+<tr><td align="center" width="56"><img src=".github/apps/alert-alert.svg" width="39" alt=""></td><td><a href="https://github.com/thedevmark/alert-alert"><b>Alert! Alert!</b></a><br>Turn a video URL or local file into a cropped, trimmed stream alert.</td></tr>
+<tr><td align="center" width="56"><img src=".github/apps/auto-iphone-uploader.svg" width="39" alt=""></td><td><a href="https://github.com/thedevmark/auto-iphone-uploader"><b>Auto iPhone Uploader</b></a><br>Write a video's title and captions once on your PC, then post it from the real apps on your iPhone. Early preview.</td></tr>
+<tr><td align="center" width="56"><img src=".github/apps/streamer-online.svg" width="44" alt=""></td><td><a href="https://streamer.deutschmark.online"><b>Streamer Online</b></a><br>Build OBS scenes and browser-source overlays with connected streamer tools.</td></tr>
 </table>
 
-<sub>All projects → <a href="https://github.com/thedeutschmark">github.com/thedeutschmark</a></sub>
+<sub>All projects → <a href="https://github.com/thedevmark">github.com/thedevmark</a></sub>
